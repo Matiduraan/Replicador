@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"sync"
+	"time"
 )
 
 type Nodes struct {
@@ -29,15 +31,47 @@ type ProcessedNode struct {
 	Dependencies []string `json:"dependencies"`
 }
 
-var MOCK_STEPS = []string{"ads", "items", "user", "userPreferences", "campaigns"}
+type DuplicateRequest struct {
+	UserId int `json:"userId"`
+	Steps []string `json:"steps"`
+}
 
-func main() {
+func main(){
+	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		if(r.Method != "GET"){
+			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Pong"))
+	})
+
+	http.HandleFunc("/duplicateUser", func(w http.ResponseWriter, r *http.Request) {
+		if(r.Method != "POST"){
+			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+			return
+		}
+		user := &DuplicateRequest{}
+		json.NewDecoder(r.Body).Decode(user)
+		userId := user.UserId
+		steps := user.Steps
+		go duplicateUser(userId, steps)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Request received and processing in background"))
+	})
+
+	http.ListenAndServe(":3000", nil)
+}
+
+func duplicateUser(userId int, steps []string) {
+	startTime := time.Now()
 	fmt.Println("Hello, World!")
 	tree := readJsonFile()
-	processedTree := processTree(tree, MOCK_STEPS)
+	processedTree := processTree(tree, steps)
 	var finishedNodes []ProcessedNode
-	paramsHeap := make(map[string]interface{})
-	functions := GetNeededFunctions(MOCK_STEPS)
+	paramsHeap := map[string]interface{}{"originalUser": userId}
+	functions := GetNeededFunctions(steps)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
@@ -80,6 +114,8 @@ func main() {
 		wg.Wait()
 	}
 	fmt.Println("Finished executing all nodes")
+	endTime := time.Now()
+	fmt.Println("Execution time: ", endTime.Sub(startTime))
 }
 
 func readJsonFile() []Node {
@@ -93,7 +129,6 @@ func readJsonFile() []Node {
 
 	defer jsonFile.Close()
 
-	// read our opened jsonFile and assign it to a Node array
 	var nodes Nodes
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
@@ -111,7 +146,7 @@ func processNode(node Node, dependencyMap map[string][]string) ProcessedNode {
 		Name:         node.Name,
 		Path:         node.Path,
 		Params:       node.Params,
-		Children:     node.Children, // Convert node.Children to a string slice
+		Children:     node.Children, 
 		Dependencies: dependencies,
 	}
 }
