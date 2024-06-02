@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	stepsPkg "replicador/steps"
@@ -56,7 +55,14 @@ func main(){
 		json.NewDecoder(r.Body).Decode(user)
 		userId := user.UserId
 		steps := user.Steps
-		go duplicateUser(userId, steps)
+		tree := readJsonFile()
+		processedTree := processTree(tree, steps)
+		verified := verifyDependencies(processedTree)
+		if !verified {
+			http.Error(w, "There are circular or missing dependencies in the tree", http.StatusBadRequest)
+			return
+		}
+		go duplicateUser(userId, steps,processedTree)
 
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Request received and processing in background"))
@@ -65,11 +71,27 @@ func main(){
 	http.ListenAndServe(":3000", nil)
 }
 
-func duplicateUser(userId int, steps []string) {
+func verifyDependencies(nodesToExecute []ProcessedNode) bool {
+	for _, node := range nodesToExecute {
+		for _, dependency := range node.Dependencies {
+			found := false
+			for _, finalNode := range nodesToExecute {
+				if finalNode.Id == dependency {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func duplicateUser(userId int, steps []string, processedTree []ProcessedNode) {
 	startTime := time.Now()
 	fmt.Println("Hello, World!")
-	tree := readJsonFile()
-	processedTree := processTree(tree, steps)
 	var finishedNodes []ProcessedNode
 	paramsHeap := map[string]interface{}{"originalUser": userId}
 	functions := GetNeededFunctions(steps)
@@ -120,23 +142,19 @@ func duplicateUser(userId int, steps []string) {
 }
 
 func readJsonFile() []Node {
-	jsonFile, err := os.Open("tree.json")
+	byteValue, err := os.ReadFile("tree.json")
 
 	if err != nil {
 		fmt.Println(err)
+		return nil
 	}
 
 	fmt.Println("Successfully Opened tree.json")
 
-	defer jsonFile.Close()
-
 	var nodes Nodes
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
 
 	json.Unmarshal(byteValue, &nodes)
 	return nodes.Nodes
-
 }
 
 func processNode(node Node, dependencyMap map[string][]string) ProcessedNode {

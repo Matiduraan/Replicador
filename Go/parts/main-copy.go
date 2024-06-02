@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"replicador/steps"
+	stepsPkg "replicador/steps"
 )
 
 type Nodes struct {
@@ -37,9 +37,9 @@ var MOCK_STEPS = []string{"1", "2", "3","4","5"}
 
 func main() {
 	functions := make(map[string]func(<-chan interface{}, chan<- map[string]interface{}))
-	functions["user"] = steps.User
-	functions["items"] = steps.Items
-	functions["ads"] = steps.Ads
+	functions["user"] = stepsPkg.User
+	functions["items"] = stepsPkg.Items
+	functions["ads"] = stepsPkg.Ads
 
 	paramsHeap := make(map[string]interface{})
 
