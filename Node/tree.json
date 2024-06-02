@@ -1,0 +1,39 @@
+{
+  "nodes": [
+    {
+      "id": "1",
+      "name": "user",
+      "path": "./",
+      "params": [],
+      "children": ["5", "3", "4"]
+    },
+    {
+      "id": "5",
+      "name": "campaigns",
+      "path": "index.html",
+      "params": ["userId"],
+      "children": ["2"]
+    },
+    {
+      "id": "3",
+      "name": "userPreferences",
+      "path": "about.html",
+      "params": ["userId"],
+      "children": []
+    },
+    {
+      "id": "4",
+      "name": "items",
+      "path": "contact.html",
+      "params": ["userId"],
+      "children": ["2"]
+    },
+    {
+      "id": "2",
+      "name": "ads",
+      "path": "campaign.html",
+      "params": ["userId", "campaigns", "originalCampaigns"],
+      "children": []
+    }
+  ]
+}
