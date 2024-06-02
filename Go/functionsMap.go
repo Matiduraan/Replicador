@@ -2,27 +2,27 @@ package main
 
 import (
 	"fmt"
-	"replicador/steps"
+	stepsPkg "replicador/steps"
 )
 
-type stepFunction func(<-chan interface{}, chan<- map[string]interface{})
+type StepFunction func(<-chan interface{}, chan<- map[string]interface{})
 
-func FunctionsMap() map[string]stepFunction{
-	steps := map[string]stepFunction{
-		"items":            steps.Items,
-		"ads":              steps.Ads,
-		"user":             steps.User,
-		"userPreferences":  steps.UserPreferences,
-		"campaigns":        steps.Campaigns,
+func FunctionsMap() map[string]StepFunction{
+	steps := map[string]StepFunction{
+		"items":            stepsPkg.Items,
+		"ads":              stepsPkg.Ads,
+		"user":             stepsPkg.User,
+		"userPreferences":  stepsPkg.UserPreferences,
+		"campaigns":        stepsPkg.Campaigns,
 	}
 
 	return steps
 }
 
-func GetNeededFunctions(functions []string) map[string]stepFunction{
+func GetNeededFunctions(functions []string) map[string]StepFunction{
 	steps := FunctionsMap()
 	fmt.Println("Steps: ", steps)
-	neededFunctions := make(map[string]stepFunction)
+	neededFunctions := make(map[string]StepFunction)
 
 	for _, function := range functions {
 		if _, ok := steps[function]; ok {

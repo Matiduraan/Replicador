@@ -1,4 +1,4 @@
-package steps
+package stepsPkg
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ func User(paramsChannel <-chan interface{}, responseChannel chan<- map[string]in
 	fmt.Println("User: ", paramsToExecute)
 	
 	// Simular procesamiento
-	time.Sleep(5000 * time.Millisecond)
+	time.Sleep(1000 * time.Millisecond)
 	// Enviar un mensaje al canal
 	responseChannel <- map[string]interface{}{"userId": 1}
 }

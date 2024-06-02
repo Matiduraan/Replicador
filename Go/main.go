@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	stepsPkg "replicador/steps"
 	"sync"
 	"time"
 )
@@ -98,7 +99,7 @@ func duplicateUser(userId int, steps []string) {
 				}
 				paramsChannel := make(chan interface{}, 1)
 				resultsChannel := make(chan map[string]interface{}, 1)
-				go functions[node.Name](paramsChannel, resultsChannel)
+				go stepsPkg.MeasureTime(functions[node.Name], paramsChannel, resultsChannel, node.Name)
 				paramsChannel <- params
 				close(paramsChannel)
 				response := <-resultsChannel
