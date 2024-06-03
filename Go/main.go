@@ -3,11 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	stepsPkg "replicador/steps"
 	"sync"
 	"time"
+
+	"github.com/panjf2000/ants"
 )
 
 type Nodes struct {
@@ -98,15 +101,23 @@ func duplicateUser(userId int, steps []string, processedTree []ProcessedNode) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
+	poolSize := 20 // Ajusta el tamaño del pool según tus necesidades
+    p, err := ants.NewPool(poolSize)
+    if err != nil {
+        log.Fatalf("Failed to create pool: %v", err)
+    }
+    defer p.Release()
+
 	for {
 		nodesToExecute := findNodesToExecute(finishedNodes, processedTree)
-		fmt.Println("Nodes to execute", nodesToExecute)
+		fmt.Println("Nodes to execute", nodesToExecute) 
 		if len(finishedNodes) == len(processedTree) {
 			break
 		}
 		for _, node := range nodesToExecute {
 			wg.Add(1)
-			go func(node ProcessedNode) {
+			node := node
+			err := p.Submit(func() {
 				defer wg.Done()
 				fmt.Println("Executing node", node.Name)
 				var params = make(map[string]interface{})
@@ -132,7 +143,11 @@ func duplicateUser(userId int, steps []string, processedTree []ProcessedNode) {
 				finishedNodes = append(finishedNodes, node)
 				mu.Unlock()
 				fmt.Println("Finished executing node", node.Name)
-			}(node)
+			})
+            if err != nil {
+                log.Printf("Failed to submit task: %v", err)
+                wg.Done()
+            }
 		}
 		wg.Wait()
 	}
